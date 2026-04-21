@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="sw">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IAA Student Portal - Smart Attendance</title>
+    <link rel="icon" type="image/jpeg" href="logo.jpg">
+    <link rel="apple-touch-icon" href="logo.jpg">
+
+    <head>
+        <link rel="manifest" href="student_manifest.json">
+        <meta name="theme-color" content="#061a3d">
+        <link rel="apple-touch-icon" href="logo.jpg">
+
+        <script>
+            // Kuanzisha Service Worker
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('sw.js');
+                });
+            }
+        </script>
+
+    </head>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --glass: rgba(255, 255, 255, 0.1);
+            --border: rgba(255, 255, 255, 0.2);
+            --primary-blue: #00d2ff;
+            --accent-red: #ff4d4d;
+        }
+
+        body {
+            background: linear-gradient(rgba(6, 26, 61, 0.9), rgba(30, 60, 114, 0.8)),
+                url('https://images.unsplash.com/photo-1523050853063-bd8012fbb72a?auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            font-family: 'Poppins', sans-serif;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: var(--glass);
+            backdrop-filter: blur(35px) saturate(180%);
+            border: 1px solid var(--border);
+            padding: 30px;
+            border-radius: 28px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.4);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin-bottom: 15px;
+            border: 2px solid var(--primary-blue);
+            background: white;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            margin: 10px 0;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border);
+            color: white;
+            border-radius: 12px;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            background: linear-gradient(90deg, #1e3c72 0%, #00d2ff 100%);
+            border: none;
+            padding: 15px;
+            width: 100%;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-red {
+            background: linear-gradient(90deg, #d31027 0%, #ea384d 100%);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 15px;
+            text-align: left;
+            margin-bottom: 20px;
+            border-left: 5px solid var(--primary-blue);
+        }
+
+        .status-msg {
+            margin-top: 10px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <img src="logo.jpg" alt="IAA Logo" class="logo">
+
+        <div id="landingView">
+            <h2>IAA Student Portal</h2>
+            <p>Ingia kupiga mahudhurio yako</p>
+            <button class="btn" onclick="showView('loginView')">Ingia (Login)</button>
+            <button class="btn" style="background:transparent; border:1px solid var(--primary-blue);"
+                onclick="showView('setupView')">Tengeneza Akaunti / Password</button>
+        </div>
+
+        <div id="setupView" class="hidden">
+            <h3>Tengeneza Password</h3>
+            <p style="font-size: 12px;">Hakikisha jina lako lishasajiliwa na CR</p>
+            <input type="text" id="setupName" placeholder="Majina yako (kama yalivyo Sheet)">
+            <input type="password" id="setupPass" placeholder="Weka Password Mpya">
+            <button class="btn" onclick="handleSetup()">Hifadhi Password</button>
+            <button class="btn btn-red" onclick="showView('landingView')">Rudi</button>
+        </div>
+
+        <div id="loginView" class="hidden">
+            <h3>Student Login</h3>
+            <input type="text" id="logName" placeholder="Jina lako">
+            <input type="password" id="logPass" placeholder="Password yako">
+            <button class="btn" onclick="handleLogin()">Ingia Sasa</button>
+            <button class="btn btn-red" onclick="showView('landingView')">Rudi</button>
+        </div>
+
+        <div id="dashboardView" class="hidden">
+            <div class="info-card">
+                <strong>Kozi:</strong> <span id="stdCourse">...</span><br>
+                <strong>CR:</strong> <span id="crName">...</span> (<span id="crPhone">...</span>)
+            </div>
+
+            <h3>Jaza Mahudhurio</h3>
+            <input type="text" id="tokenInput" placeholder="Ingiza Kodi ya Siri">
+            <button class="btn" onclick="submitAttendance()">Hifadhi Mahudhurio</button>
+            <div id="statusMsg" class="status-msg"></div>
+
+            <hr style="opacity: 0.2; margin: 20px 0;">
+            <button class="btn" style="background: rgba(255,255,255,0.1);"
+                onclick="showView('changePassView')">Badilisha Password</button>
+            <button class="btn btn-red" onclick="logout()">Ondoka</button>
+        </div>
+
+        <div id="changePassView" class="hidden">
+            <h3>Badilisha Password</h3>
+            <input type="password" id="newPass" placeholder="Password Mpya">
+            <button class="btn" onclick="handleChangePass()">Update Password</button>
+            <button class="btn btn-red" onclick="showView('dashboardView')">Ghairi</button>
+        </div>
+    </div>
+
+    <script>
+        // URL ya Google Apps Script yako
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx_I12Hue7CEKB6i7RmJhZCbZs42ixYITlwqYRlyEubvEOGW6FjUQuOpzKXUJjMOOOa5A/exec";
+
+        let studentData = null;
+
+        // Kazi ya kubadilisha kurasa (Views)
+        function showView(id) {
+            document.querySelectorAll('.container > div').forEach(v => v.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        // 1. TENGENEZA AKAUNTI / PASSWORD (SETUP)
+        async function handleSetup() {
+            const name = document.getElementById('setupName').value;
+            const pass = document.getElementById('setupPass').value;
+
+            if (!name || !pass) return alert("Tafadhali jaza jina na password!");
+
+            try {
+                // Cheki kama jina lipo kwenye Sheet ya Students
+                const res = await fetch(`${SCRIPT_URL}?action=getStudents`);
+                const students = await res.json();
+
+                // Inakubali hata jina moja (Case insensitive search)
+                const found = students.find(s => s[0].toLowerCase().includes(name.toLowerCase()));
+
+                if (found) {
+                    const params = new URLSearchParams({
+                        action: 'registerUser',
+                        name: found[0],
+                        phone: pass, // Password inahifadhiwa hapa
+                        role: "Student",
+                        course: found[1],
+                        level: "N/A",
+                        subject: "N/A",
+                        year: "N/A"
+                    });
+
+                    // Tuma data kwenye Cloud Sheet
+                    await fetch(`${SCRIPT_URL}?${params.toString()}`, {
+                        method: "POST",
+                        mode: 'no-cors'
+                    });
+
+                    alert("Hongera! Akaunti yako imewekwa. Sasa ingia.");
+                    showView('loginView');
+                } else {
+                    alert("Samahani! Jina lako halijapatikana kwenye orodha ya CR. Hakikisha CR amekusajili kwanza.");
+                }
+            } catch (e) {
+                alert("Hitilafu imetokea wakati wa kuwasiliana na seva.");
+            }
+        }
+
+        // 2. LOGIN
+        async function handleLogin() {
+            const name = document.getElementById('logName').value;
+            const pass = document.getElementById('logPass').value;
+
+            if (!name || !pass) return alert("Jaza jina na password kuingia!");
+
+            try {
+                const res = await fetch(`${SCRIPT_URL}?action=getUsers`);
+                const users = await res.json();
+
+                // Login kwa kutambua jina (hata likiwa moja) na password
+                const user = users.find(u =>
+                    u[0].toLowerCase().includes(name.toLowerCase()) &&
+                    String(u[1]) === String(pass) &&
+                    u[2] === "Student"
+                );
+
+                if (user) {
+                    studentData = user;
+                    loadDashboard();
+                    showView('dashboardView');
+                } else {
+                    alert("Jina au Password sio sahihi! Hakikisha umetengeneza akaunti kwanza.");
+                }
+            } catch (e) {
+                alert("Imeshindwa kuingia. Angalia internet yako.");
+            }
+        }
+
+        // 3. DASHBOARD DATA (Inapakia Kozi na CR Info)
+        async function loadDashboard() {
+            document.getElementById('stdCourse').innerText = studentData[3];
+
+            try {
+                const res = await fetch(`${SCRIPT_URL}?action=getUsers`);
+                const allUsers = await res.json();
+
+                // Tafuta CR wa kozi hii kutoka kwenye Sheet
+                const cr = allUsers.find(u => u[2] === 'CR' && u[3] === studentData[3]);
+
+                if (cr) {
+                    document.getElementById('crName').innerText = cr[0];
+                    document.getElementById('crPhone').innerText = cr[1];
+                } else {
+                    document.getElementById('crName').innerText = "Hajapatikana";
+                    document.getElementById('crPhone').innerText = "N/A";
+                }
+            } catch (e) {
+                console.log("Haikuweza kupata data za CR");
+            }
+        }
+
+        async function submitAttendance() {
+            const token = document.getElementById('tokenInput').value;
+            const msg = document.getElementById('statusMsg');
+
+            if (!token) return alert("Weka kodi kwanza!");
+
+            msg.innerText = "Inahakiki kodi Online...";
+            msg.style.color = "white";
+
+            try {
+                const res = await fetch(`${SCRIPT_URL}?action=verifyToken&token=${token}`);
+                const result = await res.json();
+
+                if (result.valid) {
+                    // Tunatuma data kama URL Parameters
+                    const queryParams = new URLSearchParams({
+                        action: 'logAttendance',
+                        studentName: studentData[0],
+                        subject: result.data.subject,
+                        course: studentData[3],
+                        lecturer: result.data.lecturer
+                    });
+
+                    await fetch(`${SCRIPT_URL}?${queryParams.toString()}`, {
+                        method: "POST",
+                        mode: 'no-cors'
+                    });
+
+                    msg.style.color = "#00d2ff";
+                    msg.innerText = `Imefanikiwa! Umerekodiwa somo la ${result.data.subject}.`;
+                    document.getElementById('tokenInput').value = "";
+
+                } else {
+                    msg.style.color = "#ff4d4d";
+                    msg.innerText = "Samahani! Kodi sio sahihi au muda wake umeisha.";
+                }
+            } catch (e) {
+                msg.innerText = "Hitilafu imetokea. Jaribu tena.";
+            }
+        }
+        // 5. BADILISHA PASSWORD
+        async function handleChangePass() {
+            const newPass = document.getElementById('newPass').value;
+            if (!newPass) return alert("Weka password mpya!");
+
+            try {
+                const params = new URLSearchParams({
+                    action: 'registerUser',
+                    name: studentData[0],
+                    phone: newPass,
+                    role: "Student",
+                    course: studentData[3],
+                    level: "N/A",
+                    subject: "N/A",
+                    year: "N/A"
+                });
+
+                await fetch(`${SCRIPT_URL}?${params.toString()}`, {
+                    method: "POST",
+                    mode: 'no-cors'
+                });
+
+                alert("Password imebadilishwa kikamilifu!");
+                showView('dashboardView');
+            } catch (e) {
+                alert("Imeshindwa kubadili password.");
+            }
+        }
+
+        // Kazi ya Logout
+        function logout() {
+            studentData = null;
+            showView('landingView');
+        }
+    </script>
+</body>
+
+</html>

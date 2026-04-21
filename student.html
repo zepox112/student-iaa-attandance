@@ -101,6 +101,25 @@
             display: none;
         }
 
+        /* Style ya Button ya Lugha pekee */
+        .lang-container {
+            display: flex;
+            justify-content: flex-end;
+            width: 100%;
+            margin-bottom: -15px;
+        }
+
+        .lang-btn {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
         .info-card {
             background: rgba(255, 255, 255, 0.1);
             padding: 15px;
@@ -118,244 +137,337 @@
     </style>
 </head>
 
-<body>
 
+
+<body>
     <div class="container">
+        <div class="lang-container">
+            <button class="lang-btn" id="langBtn" onclick="toggleLanguage()">
+                English 🌐
+            </button>
+        </div>
+
         <img src="logo.jpg" alt="IAA Logo" class="logo">
 
         <div id="landingView">
-            <h2>IAA Student Portal</h2>
-            <p>Ingia kupiga mahudhurio yako</p>
-            <button class="btn" onclick="showView('loginView')">Ingia (Login)</button>
+            <h2 data-key="landingTitle">IAA Student Portal</h2>
+            <p data-key="landingSub">Ingia kupiga mahudhurio yako</p>
+            <button class="btn" onclick="showView('loginView')" data-key="loginBtn">Ingia (Login)</button>
             <button class="btn" style="background:transparent; border:1px solid var(--primary-blue);"
-                onclick="showView('setupView')">Tengeneza Akaunti / Password</button>
+                onclick="showView('setupView')" data-key="setupBtn">Tengeneza Akaunti / Password</button>
         </div>
 
         <div id="setupView" class="hidden">
-            <h3>Tengeneza Password</h3>
-            <p style="font-size: 12px;">Hakikisha jina lako lishasajiliwa na CR</p>
-            <input type="text" id="setupName" placeholder="Majina yako (kama yalivyo Sheet)">
-            <input type="password" id="setupPass" placeholder="Weka Password Mpya">
-            <button class="btn" onclick="handleSetup()">Hifadhi Password</button>
-            <button class="btn btn-red" onclick="showView('landingView')">Rudi</button>
+            <h3 data-key="setupTitle">Tengeneza Password</h3>
+            <p style="font-size: 12px;" data-key="setupHint">Hakikisha jina lako lishasajiliwa na CR</p>
+            <input type="text" id="setupName" data-key="setupNamePlac" placeholder="Majina yako (kama yalivyo Sheet)">
+            <input type="password" id="setupPass" data-key="setupPassPlac" placeholder="Weka Password Mpya">
+            <button class="btn" onclick="handleSetup()" data-key="saveBtn">Hifadhi Password</button>
+            <button class="btn btn-red" onclick="showView('landingView')" data-key="backBtn">Rudi</button>
         </div>
 
         <div id="loginView" class="hidden">
-            <h3>Student Login</h3>
-            <input type="text" id="logName" placeholder="Jina lako">
-            <input type="password" id="logPass" placeholder="Password yako">
-            <button class="btn" onclick="handleLogin()">Ingia Sasa</button>
-            <button class="btn btn-red" onclick="showView('landingView')">Rudi</button>
+            <h3 data-key="loginTitle">Student Login</h3>
+            <input type="text" id="logName" data-key="logNamePlac" placeholder="Jina lako">
+            <input type="password" id="logPass" data-key="logPassPlac" placeholder="Password yako">
+            <button class="btn" onclick="handleLogin()" data-key="loginBtnNow">Ingia Sasa</button>
+            <button class="btn btn-red" onclick="showView('landingView')" data-key="backBtn">Rudi</button>
         </div>
 
         <div id="dashboardView" class="hidden">
             <div class="info-card">
-                <strong>Kozi:</strong> <span id="stdCourse">...</span><br>
-                <strong>CR:</strong> <span id="crName">...</span> (<span id="crPhone">...</span>)
+                <strong data-key="dashCourse">Kozi:</strong> <span id="stdCourse">...</span><br>
+                <strong data-key="dashCR">CR:</strong> <span id="crName">...</span> (<span id="crPhone">...</span>)
             </div>
-
-            <h3>Jaza Mahudhurio</h3>
-            <input type="text" id="tokenInput" placeholder="Ingiza Kodi ya Siri">
-            <button class="btn" onclick="submitAttendance()">Hifadhi Mahudhurio</button>
+            <h3 data-key="attTitle">Jaza Mahudhurio</h3>
+            <input type="text" id="tokenInput" data-key="tokenPlac" placeholder="Ingiza Kodi ya Siri">
+            <button class="btn" onclick="submitAttendance()" data-key="submitAtt">Hifadhi Mahudhurio</button>
             <div id="statusMsg" class="status-msg"></div>
-
             <hr style="opacity: 0.2; margin: 20px 0;">
-            <button class="btn" style="background: rgba(255,255,255,0.1);"
-                onclick="showView('changePassView')">Badilisha Password</button>
-            <button class="btn btn-red" onclick="logout()">Ondoka</button>
+            <button class="btn" style="background: rgba(255,255,255,0.1);" onclick="showView('changePassView')"
+                data-key="changePass">Badilisha Password</button>
+            <button class="btn btn-red" onclick="logout()" data-key="logout">Ondoka</button>
         </div>
 
         <div id="changePassView" class="hidden">
-            <h3>Badilisha Password</h3>
-            <input type="password" id="newPass" placeholder="Password Mpya">
-            <button class="btn" onclick="handleChangePass()">Update Password</button>
-            <button class="btn btn-red" onclick="showView('dashboardView')">Ghairi</button>
+            <h3 data-key="changePassTitle">Badilisha Password</h3>
+            <input type="password" id="newPass" data-key="newPassPlac" placeholder="Password Mpya">
+            <button class="btn" onclick="handleChangePass()" data-key="updateBtn">Update Password</button>
+            <button class="btn btn-red" onclick="showView('dashboardView')" data-key="cancelBtn">Ghairi</button>
         </div>
     </div>
+</body>
 
-    <script>
-        // URL ya Google Apps Script yako
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx_I12Hue7CEKB6i7RmJhZCbZs42ixYITlwqYRlyEubvEOGW6FjUQuOpzKXUJjMOOOa5A/exec";
+<script>
+    // URL ya Google Apps Script yako
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx_I12Hue7CEKB6i7RmJhZCbZs42ixYITlwqYRlyEubvEOGW6FjUQuOpzKXUJjMOOOa5A/exec";
 
-        let studentData = null;
+    let studentData = null;
 
-        // Kazi ya kubadilisha kurasa (Views)
-        function showView(id) {
-            document.querySelectorAll('.container > div').forEach(v => v.classList.add('hidden'));
-            document.getElementById(id).classList.remove('hidden');
-        }
+    // Kazi ya kubadilisha kurasa (Views)
+    function showView(id) {
+        document.querySelectorAll('.container > div').forEach(v => v.classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+    }
 
-        // 1. TENGENEZA AKAUNTI / PASSWORD (SETUP)
-        async function handleSetup() {
-            const name = document.getElementById('setupName').value;
-            const pass = document.getElementById('setupPass').value;
+    // 1. TENGENEZA AKAUNTI / PASSWORD (SETUP)
+    async function handleSetup() {
+        const name = document.getElementById('setupName').value;
+        const pass = document.getElementById('setupPass').value;
 
-            if (!name || !pass) return alert("Tafadhali jaza jina na password!");
+        if (!name || !pass) return alert("Tafadhali jaza jina na password!");
 
-            try {
-                // Cheki kama jina lipo kwenye Sheet ya Students
-                const res = await fetch(`${SCRIPT_URL}?action=getStudents`);
-                const students = await res.json();
+        try {
+            // Cheki kama jina lipo kwenye Sheet ya Students
+            const res = await fetch(`${SCRIPT_URL}?action=getStudents`);
+            const students = await res.json();
 
-                // Inakubali hata jina moja (Case insensitive search)
-                const found = students.find(s => s[0].toLowerCase().includes(name.toLowerCase()));
+            // Inakubali hata jina moja (Case insensitive search)
+            const found = students.find(s => s[0].toLowerCase().includes(name.toLowerCase()));
 
-                if (found) {
-                    const params = new URLSearchParams({
-                        action: 'registerUser',
-                        name: found[0],
-                        phone: pass, // Password inahifadhiwa hapa
-                        role: "Student",
-                        course: found[1],
-                        level: "N/A",
-                        subject: "N/A",
-                        year: "N/A"
-                    });
-
-                    // Tuma data kwenye Cloud Sheet
-                    await fetch(`${SCRIPT_URL}?${params.toString()}`, {
-                        method: "POST",
-                        mode: 'no-cors'
-                    });
-
-                    alert("Hongera! Akaunti yako imewekwa. Sasa ingia.");
-                    showView('loginView');
-                } else {
-                    alert("Samahani! Jina lako halijapatikana kwenye orodha ya CR. Hakikisha CR amekusajili kwanza.");
-                }
-            } catch (e) {
-                alert("Hitilafu imetokea wakati wa kuwasiliana na seva.");
-            }
-        }
-
-        // 2. LOGIN
-        async function handleLogin() {
-            const name = document.getElementById('logName').value;
-            const pass = document.getElementById('logPass').value;
-
-            if (!name || !pass) return alert("Jaza jina na password kuingia!");
-
-            try {
-                const res = await fetch(`${SCRIPT_URL}?action=getUsers`);
-                const users = await res.json();
-
-                // Login kwa kutambua jina (hata likiwa moja) na password
-                const user = users.find(u =>
-                    u[0].toLowerCase().includes(name.toLowerCase()) &&
-                    String(u[1]) === String(pass) &&
-                    u[2] === "Student"
-                );
-
-                if (user) {
-                    studentData = user;
-                    loadDashboard();
-                    showView('dashboardView');
-                } else {
-                    alert("Jina au Password sio sahihi! Hakikisha umetengeneza akaunti kwanza.");
-                }
-            } catch (e) {
-                alert("Imeshindwa kuingia. Angalia internet yako.");
-            }
-        }
-
-        // 3. DASHBOARD DATA (Inapakia Kozi na CR Info)
-        async function loadDashboard() {
-            document.getElementById('stdCourse').innerText = studentData[3];
-
-            try {
-                const res = await fetch(`${SCRIPT_URL}?action=getUsers`);
-                const allUsers = await res.json();
-
-                // Tafuta CR wa kozi hii kutoka kwenye Sheet
-                const cr = allUsers.find(u => u[2] === 'CR' && u[3] === studentData[3]);
-
-                if (cr) {
-                    document.getElementById('crName').innerText = cr[0];
-                    document.getElementById('crPhone').innerText = cr[1];
-                } else {
-                    document.getElementById('crName').innerText = "Hajapatikana";
-                    document.getElementById('crPhone').innerText = "N/A";
-                }
-            } catch (e) {
-                console.log("Haikuweza kupata data za CR");
-            }
-        }
-
-        async function submitAttendance() {
-            const token = document.getElementById('tokenInput').value;
-            const msg = document.getElementById('statusMsg');
-
-            if (!token) return alert("Weka kodi kwanza!");
-
-            msg.innerText = "Inahakiki kodi Online...";
-            msg.style.color = "white";
-
-            try {
-                const res = await fetch(`${SCRIPT_URL}?action=verifyToken&token=${token}`);
-                const result = await res.json();
-
-                if (result.valid) {
-                    // Tunatuma data kama URL Parameters
-                    const queryParams = new URLSearchParams({
-                        action: 'logAttendance',
-                        studentName: studentData[0],
-                        subject: result.data.subject,
-                        course: studentData[3],
-                        lecturer: result.data.lecturer
-                    });
-
-                    await fetch(`${SCRIPT_URL}?${queryParams.toString()}`, {
-                        method: "POST",
-                        mode: 'no-cors'
-                    });
-
-                    msg.style.color = "#00d2ff";
-                    msg.innerText = `Imefanikiwa! Umerekodiwa somo la ${result.data.subject}.`;
-                    document.getElementById('tokenInput').value = "";
-
-                } else {
-                    msg.style.color = "#ff4d4d";
-                    msg.innerText = "Samahani! Kodi sio sahihi au muda wake umeisha.";
-                }
-            } catch (e) {
-                msg.innerText = "Hitilafu imetokea. Jaribu tena.";
-            }
-        }
-        // 5. BADILISHA PASSWORD
-        async function handleChangePass() {
-            const newPass = document.getElementById('newPass').value;
-            if (!newPass) return alert("Weka password mpya!");
-
-            try {
+            if (found) {
                 const params = new URLSearchParams({
                     action: 'registerUser',
-                    name: studentData[0],
-                    phone: newPass,
+                    name: found[0],
+                    phone: pass, // Password inahifadhiwa hapa
                     role: "Student",
-                    course: studentData[3],
+                    course: found[1],
                     level: "N/A",
                     subject: "N/A",
                     year: "N/A"
                 });
 
+                // Tuma data kwenye Cloud Sheet
                 await fetch(`${SCRIPT_URL}?${params.toString()}`, {
                     method: "POST",
                     mode: 'no-cors'
                 });
 
-                alert("Password imebadilishwa kikamilifu!");
-                showView('dashboardView');
-            } catch (e) {
-                alert("Imeshindwa kubadili password.");
+                alert("Hongera! Akaunti yako imewekwa. Sasa ingia.");
+                showView('loginView');
+            } else {
+                alert("Samahani! Jina lako halijapatikana kwenye orodha ya CR. Hakikisha CR amekusajili kwanza.");
             }
+        } catch (e) {
+            alert("Hitilafu imetokea wakati wa kuwasiliana na seva.");
         }
+    }
 
-        // Kazi ya Logout
-        function logout() {
-            studentData = null;
-            showView('landingView');
+    // 2. LOGIN
+    async function handleLogin() {
+        const name = document.getElementById('logName').value;
+        const pass = document.getElementById('logPass').value;
+
+        if (!name || !pass) return alert("Jaza jina na password kuingia!");
+
+        try {
+            const res = await fetch(`${SCRIPT_URL}?action=getUsers`);
+            const users = await res.json();
+
+            // Login kwa kutambua jina (hata likiwa moja) na password
+            const user = users.find(u =>
+                u[0].toLowerCase().includes(name.toLowerCase()) &&
+                String(u[1]) === String(pass) &&
+                u[2] === "Student"
+            );
+
+            if (user) {
+                studentData = user;
+                loadDashboard();
+                showView('dashboardView');
+            } else {
+                alert("Jina au Password sio sahihi! Hakikisha umetengeneza akaunti kwanza.");
+            }
+        } catch (e) {
+            alert("Imeshindwa kuingia. Angalia internet yako.");
         }
-    </script>
-</body>
+    }
+
+    // 3. DASHBOARD DATA (Inapakia Kozi na CR Info)
+    async function loadDashboard() {
+        document.getElementById('stdCourse').innerText = studentData[3];
+
+        try {
+            const res = await fetch(`${SCRIPT_URL}?action=getUsers`);
+            const allUsers = await res.json();
+
+            // Tafuta CR wa kozi hii kutoka kwenye Sheet
+            const cr = allUsers.find(u => u[2] === 'CR' && u[3] === studentData[3]);
+
+            if (cr) {
+                document.getElementById('crName').innerText = cr[0];
+                document.getElementById('crPhone').innerText = cr[1];
+            } else {
+                document.getElementById('crName').innerText = "Hajapatikana";
+                document.getElementById('crPhone').innerText = "N/A";
+            }
+        } catch (e) {
+            console.log("Haikuweza kupata data za CR");
+        }
+    }
+
+    async function submitAttendance() {
+        const token = document.getElementById('tokenInput').value;
+        const msg = document.getElementById('statusMsg');
+
+        if (!token) return alert("Weka kodi kwanza!");
+
+        msg.innerText = "Inahakiki kodi Online...";
+        msg.style.color = "white";
+
+        try {
+            const res = await fetch(`${SCRIPT_URL}?action=verifyToken&token=${token}`);
+            const result = await res.json();
+
+            if (result.valid) {
+                // Tunatuma data kama URL Parameters
+                const queryParams = new URLSearchParams({
+                    action: 'logAttendance',
+                    studentName: studentData[0],
+                    subject: result.data.subject,
+                    course: studentData[3],
+                    lecturer: result.data.lecturer
+                });
+
+                await fetch(`${SCRIPT_URL}?${queryParams.toString()}`, {
+                    method: "POST",
+                    mode: 'no-cors'
+                });
+
+                msg.style.color = "#00d2ff";
+                msg.innerText = `Imefanikiwa! Umerekodiwa somo la ${result.data.subject}.`;
+                document.getElementById('tokenInput').value = "";
+
+            } else {
+                msg.style.color = "#ff4d4d";
+                msg.innerText = "Samahani! Kodi sio sahihi au muda wake umeisha.";
+            }
+        } catch (e) {
+            msg.innerText = "Hitilafu imetokea. Jaribu tena.";
+        }
+    }
+    // 5. BADILISHA PASSWORD
+    async function handleChangePass() {
+        const newPass = document.getElementById('newPass').value;
+        if (!newPass) return alert("Weka password mpya!");
+
+        try {
+            const params = new URLSearchParams({
+                action: 'registerUser',
+                name: studentData[0],
+                phone: newPass,
+                role: "Student",
+                course: studentData[3],
+                level: "N/A",
+                subject: "N/A",
+                year: "N/A"
+            });
+
+            await fetch(`${SCRIPT_URL}?${params.toString()}`, {
+                method: "POST",
+                mode: 'no-cors'
+            });
+
+            alert("Password imebadilishwa kikamilifu!");
+            showView('dashboardView');
+        } catch (e) {
+            alert("Imeshindwa kubadili password.");
+        }
+    }
+    let currentLang = localStorage.getItem('appLang') || 'sw';
+    const translations = {
+        'sw': {
+            'landingTitle': 'IAA Student Portal',
+            'landingSub': 'Ingia kupiga mahudhurio yako',
+            'loginBtn': 'Ingia (Login)',
+            'setupBtn': 'Tengeneza Akaunti / Password',
+            'setupTitle': 'Tengeneza Password',
+            'setupHint': 'Hakikisha jina lako lishasajiliwa na CR',
+            'setupNamePlac': 'Majina yako (kama yalivyo Sheet)',
+            'setupPassPlac': 'Weka Password Mpya',
+            'saveBtn': 'Hifadhi Password',
+            'backBtn': 'Rudi',
+            'loginTitle': 'Student Login',
+            'logNamePlac': 'Jina lako',
+            'logPassPlac': 'Password yako',
+            'loginBtnNow': 'Ingia Sasa',
+            'dashCourse': 'Kozi:',
+            'dashCR': 'CR:',
+            'attTitle': 'Jaza Mahudhurio',
+            'tokenPlac': 'Ingiza Kodi ya Siri',
+            'submitAtt': 'Hifadhi Mahudhurio',
+            'changePass': 'Badilisha Password',
+            'logout': 'Ondoka',
+            'changePassTitle': 'Badilisha Password',
+            'newPassPlac': 'Password Mpya',
+            'updateBtn': 'Update Password',
+            'cancelBtn': 'Ghairi',
+            'langBtn': 'English 🌐'
+        },
+        'en': {
+            'landingTitle': 'IAA Student Portal',
+            'landingSub': 'Log in to record your attendance',
+            'loginBtn': 'Log In',
+            'setupBtn': 'Create Account / Password',
+            'setupTitle': 'Set Password',
+            'setupHint': 'Ensure your name is registered by the CR',
+            'setupNamePlac': 'Your names (as in Sheet)',
+            'setupPassPlac': 'Set New Password',
+            'saveBtn': 'Save Password',
+            'backBtn': 'Back',
+            'loginTitle': 'Student Login',
+            'logNamePlac': 'Your name',
+            'logPassPlac': 'Your password',
+            'loginBtnNow': 'Login Now',
+            'dashCourse': 'Course:',
+            'dashCR': 'CR:',
+            'attTitle': 'Record Attendance',
+            'tokenPlac': 'Enter Secret Code',
+            'submitAtt': 'Submit Attendance',
+            'changePass': 'Change Password',
+            'logout': 'Logout',
+            'changePassTitle': 'Change Password',
+            'newPassPlac': 'New Password',
+            'updateBtn': 'Update Password',
+            'cancelBtn': 'Cancel',
+            'langBtn': 'Kiswahili 🌐'
+        }
+    };
+
+    function toggleLanguage() {
+        currentLang = currentLang === 'sw' ? 'en' : 'sw';
+        localStorage.setItem('appLang', currentLang);
+        updateUI();
+    }
+    function updateUI() {
+        document.querySelectorAll('[data-key]').forEach(elem => {
+            const key = elem.getAttribute('data-key');
+            if (translations[currentLang][key]) {
+                // Kama ni input, badilisha placeholder tu
+                if (elem.tagName === 'INPUT') {
+                    elem.placeholder = translations[currentLang][key];
+                } else {
+                    // Kama ni kingine, badilisha maandishi
+                    elem.innerText = translations[currentLang][key];
+                }
+            }
+        });
+        // Badilisha neno kwenye button ya lugha yenyewe
+        document.getElementById('langBtn').innerText = translations[currentLang]['langBtn'];
+    }
+
+    // Hakikisha showView inaita updateUI kila inapobadilisha ukurasa
+    function showView(id) {
+        document.querySelectorAll('.container > div').forEach(v => {
+            if (v.id) v.classList.add('hidden');
+        });
+        document.getElementById(id).classList.remove('hidden');
+        updateUI();
+    }
+
+    // Itekeleze lugha wakati app inafunguliwa
+    window.onload = updateUI;
+</script>
+
 
 </html>

@@ -242,7 +242,7 @@
 
 <script>
     // URL ya Google Apps Script yako
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx_I12Hue7CEKB6i7RmJhZCbZs42ixYITlwqYRlyEubvEOGW6FjUQuOpzKXUJjMOOOa5A/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxR_9viVlGDrDLZdSqm1xXv4eiP1RcvvBgWPketHAfBoFtB6AHd25Orx19WwGKnFq1MJg/exec";
 
     let studentData = null;
 
@@ -252,76 +252,139 @@
         document.getElementById(id).classList.remove('hidden');
     }
 
-    // 1. TENGENEZA AKAUNTI / PASSWORD (SETUP)
+    // 1. TENGENEZA AKAUNTI / PASSWORD (SETUP) - VERSION INAYOCHUKUA SIFA ZA CR
     async function handleSetup() {
-        const name = document.getElementById('setupName').value;
-        const pass = document.getElementById('setupPass').value;
+        const nameInput = document.getElementById('setupName');
+        const passInput = document.getElementById('setupPass');
+        const name = nameInput.value.trim();
+        const pass = passInput.value.trim();
 
-        if (!name || !pass) return alert("Tafadhali jaza jina na password!");
+        if (!name || !pass) return alert("Tafadhali jaza jina lako na password unayotaka!");
+
+        // --- SEHEMU YA ULINZI WA KIFAA (DEVICE ID) ---
+        let deviceId = localStorage.getItem('iaa_device_id');
+        if (!deviceId) {
+            deviceId = 'DEV-' + Math.random().toString(36).substring(2, 15) + '-' + Date.now().toString(36);
+            localStorage.setItem('iaa_device_id', deviceId);
+        }
+
+        const setupBtn = document.querySelector("#setupView .btn");
+        const originalText = setupBtn.innerText;
+        setupBtn.innerText = "Inatafuta usajili wa CR...";
+        setupBtn.disabled = true;
 
         try {
-            // Cheki kama jina lipo kwenye Sheet ya Students
+            // 1. Vuta orodha ya wanafunzi waliowekwa na ma-CR
             const res = await fetch(`${SCRIPT_URL}?action=getStudents`);
             const students = await res.json();
 
-            // Inakubali hata jina moja (Case insensitive search)
-            const found = students.find(s => s[0].toLowerCase().includes(name.toLowerCase()));
+            // 2. Tafuta mwanafunzi kulingana na jina
+            // Tunadhani mpangilio wa Sheet ya 'Students' ni: 
+            // [0]=Jina, [1]=Kozi, [2]=CR Name, [3]=Lat, [4]=Lon, [5]=Level, [6]=Academic Year, [7]=Intake
+            const found = students.find(s => s[0].toLowerCase() === name.toLowerCase());
 
             if (found) {
-                const params = new URLSearchParams({
-                    action: 'registerUser',
-                    name: found[0],
-                    phone: pass, // Password inahifadhiwa hapa
+                setupBtn.innerText = "Inasajili kifaa chako...";
+
+                // 3. Tayarisha data - Hapa tunatumia taarifa alizojaza CR awali
+                const userData = {
+                    name: found[0],       // Jina kutoka Sheet
+                    phone: pass,          // Password anayojitengenezea
                     role: "Student",
-                    course: found[1],
-                    level: "N/A",
-                    subject: "N/A",
-                    year: "N/A"
-                });
+                    course: found[1],     // Kozi aliyopangiwa na CR
+                    deviceId: deviceId,    // ID ya simu hii
+                    // Hapa tunachukua data za CR zilizopo kwenye Sheet ya Students:
+                    level: found[5] || "N/A",  // Level aliyojaza CR (Column F)
+                    year: found[6] || "N/A",   // Year aliyojaza CR (Column G)
+                    intake: found[7] || "N/A"  // Intake aliyojaza CR (Column H)
+                };
 
-                // Tuma data kwenye Cloud Sheet
-                await fetch(`${SCRIPT_URL}?${params.toString()}`, {
+                // 4. Tuma kwenda registerUser ili ifunge akaunti kwenye Users Sheet
+                await fetch(`${SCRIPT_URL}?action=registerUser`, {
                     method: "POST",
-                    mode: 'no-cors'
+                    body: JSON.stringify(userData)
                 });
 
-                alert("Hongera! Akaunti yako imewekwa. Sasa ingia.");
+                alert("Hongera " + found[0] + "! Akaunti yako imefungwa kwenye simu hii kwa vigezo vya darasa lako.");
+
+                // Safisha fomu na nenda kwenye Login
+                nameInput.value = "";
+                passInput.value = "";
                 showView('loginView');
+
             } else {
-                alert("Samahani! Jina lako halijapatikana kwenye orodha ya CR. Hakikisha CR amekusajili kwanza.");
+                alert("Jina '" + name + "' halijapatikana! Hakikisha CR wako amekuongeza kwenye mfumo kwanza.");
             }
         } catch (e) {
-            alert("Hitilafu imetokea wakati wa kuwasiliana na seva.");
+            console.error("Setup Error:", e);
+            alert("Hitilafu imetokea! Hakikisha una internet.");
+        } finally {
+            setupBtn.innerText = originalText;
+            setupBtn.disabled = false;
         }
     }
-
-    // 2. LOGIN
+    // 2. LOGIN ILIYOBORESHWA (Pamoja na Ulinzi wa Kifaa)
     async function handleLogin() {
-        const name = document.getElementById('logName').value;
-        const pass = document.getElementById('logPass').value;
+        const name = document.getElementById('logName').value.trim();
+        const pass = document.getElementById('logPass').value.trim();
+
+        // Chukua Device ID iliyohifadhiwa kwenye simu hii wakati wa Setup
+        const currentDeviceId = localStorage.getItem('iaa_device_id');
 
         if (!name || !pass) return alert("Jaza jina na password kuingia!");
+
+        // Onyesha hali ya kupakia (Loading) kwenye button
+        const loginBtn = document.querySelector("#loginView .btn");
+        const originalText = loginBtn.innerText;
+        loginBtn.innerText = "Inahakiki...";
+        loginBtn.disabled = true;
 
         try {
             const res = await fetch(`${SCRIPT_URL}?action=getUsers`);
             const users = await res.json();
 
-            // Login kwa kutambua jina (hata likiwa moja) na password
+            // Tafuta user kwa jina, password na uhakikishe ni mwanafunzi (Student)
             const user = users.find(u =>
-                u[0].toLowerCase().includes(name.toLowerCase()) &&
+                u[0].toLowerCase() === name.toLowerCase() &&
                 String(u[1]) === String(pass) &&
                 u[2] === "Student"
             );
 
             if (user) {
+                // --- ULINZI WA DEVICE ID ---
+                // Device ID imehifadhiwa Column ya 9 (Index 8) kwenye Sheet ya Users
+                const savedDeviceId = user[8];
+
+                // 1. Kama akaunti tayari imeshafungwa kwenye simu nyingine
+                if (savedDeviceId && savedDeviceId !== "N/A" && savedDeviceId !== currentDeviceId) {
+                    alert("KOSA! Akaunti hii imeshasajiliwa kwenye simu nyingine. Huwezi kuingia kwa kutumia kifaa hiki.");
+                    loginBtn.innerText = originalText;
+                    loginBtn.disabled = false;
+                    return;
+                }
+
+                // 2. Kama mwanafunzi anajaribu kuingia bila kufanya Setup (hana ID ya kifaa)
+                if (!currentDeviceId) {
+                    alert("Kifaa chako hakijatambuliwa. Hakikisha ulifanya 'Setup Password' kwenye simu hii.");
+                    loginBtn.innerText = originalText;
+                    loginBtn.disabled = false;
+                    return;
+                }
+
+                // Kila kitu kiko sawa
                 studentData = user;
-                loadDashboard();
+                await loadDashboard(); // Pakia data za CR na Kozi
                 showView('dashboardView');
+
             } else {
-                alert("Jina au Password sio sahihi! Hakikisha umetengeneza akaunti kwanza.");
+                alert("Jina au Password sio sahihi! Hakikisha umeandika jina kama lilivyosajiliwa.");
             }
         } catch (e) {
-            alert("Imeshindwa kuingia. Angalia internet yako.");
+            console.error("Login error:", e);
+            alert("Imeshindwa kuingia. Angalia muunganisho wako wa internet.");
+        } finally {
+            loginBtn.innerText = originalText;
+            loginBtn.disabled = false;
         }
     }
 
@@ -347,46 +410,74 @@
             console.log("Haikuweza kupata data za CR");
         }
     }
-
     async function submitAttendance() {
         const token = document.getElementById('tokenInput').value;
         const msg = document.getElementById('statusMsg');
 
         if (!token) return alert("Weka kodi kwanza!");
 
-        msg.innerText = "Inahakiki kodi Online...";
+        // 1. Angalia kama simu ina uwezo wa Geolocation
+        if (!navigator.geolocation) {
+            return alert("Samahani! Simu yako haiauni huduma ya Location.");
+        }
+
+        msg.innerText = "Inatafuta eneo ulilopo (GPS)...";
         msg.style.color = "white";
 
-        try {
-            const res = await fetch(`${SCRIPT_URL}?action=verifyToken&token=${token}`);
-            const result = await res.json();
+        // 2. Omba ruhusa na chukua Coordinates za mwanafunzi live
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
 
-            if (result.valid) {
-                // Tunatuma data kama URL Parameters
-                const queryParams = new URLSearchParams({
-                    action: 'logAttendance',
-                    studentName: studentData[0],
-                    subject: result.data.subject,
-                    course: studentData[3],
-                    lecturer: result.data.lecturer
-                });
+            msg.innerText = "Inahakiki kodi na umbali wa darasa...";
 
-                await fetch(`${SCRIPT_URL}?${queryParams.toString()}`, {
-                    method: "POST",
-                    mode: 'no-cors'
-                });
+            try {
+                // 3. Tuma kodi pamoja na lat/lon kwenye Script
+                const res = await fetch(`${SCRIPT_URL}?action=verifyToken&token=${token}&lat=${lat}&lon=${lon}`);
+                const result = await res.json();
 
-                msg.style.color = "#00d2ff";
-                msg.innerText = `Imefanikiwa! Umerekodiwa somo la ${result.data.subject}.`;
-                document.getElementById('tokenInput').value = "";
+                if (result.valid) {
+                    // Kama kodi ni sahihi NA mwanafunzi yupo ndani ya mita 100
+                    const queryParams = new URLSearchParams({
+                        action: 'logAttendance',
+                        studentName: studentData[0],
+                        subject: result.data.subject,
+                        course: studentData[3],
+                        lecturer: result.data.lecturer
+                    });
 
-            } else {
-                msg.style.color = "#ff4d4d";
-                msg.innerText = "Samahani! Kodi sio sahihi au muda wake umeisha.";
+                    await fetch(`${SCRIPT_URL}?${queryParams.toString()}`, {
+                        method: "POST",
+                        mode: 'no-cors'
+                    });
+
+                    msg.style.color = "#00d2ff";
+                    msg.innerText = `Imefanikiwa! Umerekodiwa somo la ${result.data.subject}.`;
+                    document.getElementById('tokenInput').value = "";
+
+                    // Refresh jedwali la mahudhurio ikiwa function ipo
+                    if (typeof loadStudentAnalytics === "function") await loadStudentAnalytics();
+
+                } else {
+                    // Hapa itakataa kama yupo mbali (mfano mita 500) au kodi mbaya
+                    msg.style.color = "#ff4d4d";
+                    msg.innerText = result.message || "Kodi sio sahihi au uko nje ya darasa!";
+                }
+            } catch (e) {
+                console.error("Fetch error:", e);
+                msg.innerText = "Hitilafu ya mtandao. Jaribu tena.";
             }
-        } catch (e) {
-            msg.innerText = "Hitilafu imetokea. Jaribu tena.";
-        }
+
+        }, (error) => {
+            // Hapa ni kama GPS imezimwa au mwanafunzi amekataa ruhusa (Deny)
+            console.error("GPS error:", error);
+            msg.style.color = "#ff4d4d";
+            msg.innerText = "Lazima uwashe GPS na uruhusu 'Location Access' ili upige mahudhurio!";
+        }, {
+            enableHighAccuracy: true, // Inatumia GPS halisi ya simu kwa usahihi zaidi
+            timeout: 15000,           // Inasubiri kwa sekunde 15 kupata eneo
+            maximumAge: 0             // Inachukua eneo jipya, sio la zamani lililohifadhiwa
+        });
     }
     // 5. BADILISHA PASSWORD
     async function handleChangePass() {

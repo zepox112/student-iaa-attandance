@@ -173,17 +173,59 @@
             <button class="btn" onclick="handleLogin()" data-key="loginBtnNow">Ingia Sasa</button>
             <button class="btn btn-red" onclick="showView('landingView')" data-key="backBtn">Rudi</button>
         </div>
-
         <div id="dashboardView" class="hidden">
             <div class="info-card">
                 <strong data-key="dashCourse">Kozi:</strong> <span id="stdCourse">...</span><br>
                 <strong data-key="dashCR">CR:</strong> <span id="crName">...</span> (<span id="crPhone">...</span>)
             </div>
+
             <h3 data-key="attTitle">Jaza Mahudhurio</h3>
             <input type="text" id="tokenInput" data-key="tokenPlac" placeholder="Ingiza Kodi ya Siri">
             <button class="btn" onclick="submitAttendance()" data-key="submitAtt">Hifadhi Mahudhurio</button>
             <div id="statusMsg" class="status-msg"></div>
+
             <hr style="opacity: 0.2; margin: 20px 0;">
+
+            <button class="btn" id="toggleStatsBtn" onclick="toggleStudentStats()"
+                style="background: rgba(0, 210, 255, 0.2); border: 1px solid var(--primary-blue);">
+                Tazama Mahudhurio Yangu
+            </button>
+
+            <div id="studentStats" class="hidden" style="margin-top: 20px;">
+                <div class="analysis-box">
+                    <strong data-key="last5">Vipindi Siku 5 Zilizopita:</strong>
+                    <div id="stdFiveDayStat" style="margin-top:10px;"></div>
+                </div>
+
+                <div class="analysis-box" style="margin-top: 15px; overflow-x: auto;">
+                    <strong style="display:block; margin-bottom:10px; color: var(--primary-blue);">Mchanganuo wa Masomo
+                        na Walimu:</strong>
+                    <table
+                        style="width:100%; border-collapse: collapse; font-size: 11px; text-align: left; color: white;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--primary-blue); color: var(--primary-blue);">
+                                <th style="padding: 10px 5px;">Tarehe</th>
+                                <th style="padding: 10px 5px;">Somo</th>
+                                <th style="padding: 10px 5px;">Mhadhiri</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTableBody">
+                            <tr>
+                                <td colspan="3" style="text-align:center; padding:15px; opacity:0.5;">Inapakia data...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="analysis-box" style="margin-top: 15px;">
+                    <strong data-key="monthly">Muhtasari wa Mwezi:</strong>
+                    <div id="stdMonthlyStat" style="margin-top:10px;"></div>
+                </div>
+            </div>
+
+            <hr style="opacity: 0.2; margin: 20px 0;">
+
             <button class="btn" style="background: rgba(255,255,255,0.1);" onclick="showView('changePassView')"
                 data-key="changePass">Badilisha Password</button>
             <button class="btn btn-red" onclick="logout()" data-key="logout">Ondoka</button>
@@ -455,7 +497,63 @@
         // Badilisha neno kwenye button ya lugha yenyewe
         document.getElementById('langBtn').innerText = translations[currentLang]['langBtn'];
     }
+    async function loadStudentAnalytics() {
+        try {
+            const res = await fetch(`${SCRIPT_URL}?action=getAttendance`);
+            const allAtt = await res.json();
 
+            // Chuja data ya mwanafunzi aliyepo sasa
+            // Tunadhani: Index 0=Jina, 1=Somo, 2=Kozi, 3=Tarehe, 4=Muda, 5=Mhadhiri
+            const myData = allAtt.filter(a => a[0] === studentData[0]);
+
+            // 1. SIKU 5 ZILIZOPITA (Summary)
+            const last5 = [];
+            for (let i = 0; i < 5; i++) {
+                let d = new Date(); d.setDate(d.getDate() - i);
+                last5.push(d.toLocaleDateString('en-GB'));
+            }
+
+            document.getElementById('stdFiveDayStat').innerHTML = last5.map(date => {
+                const match = myData.filter(a => a[3] === date);
+                return `<div class="day-stat"><span>${date}</span> <strong>${match.length} Vipindi</strong></div>`;
+            }).join('');
+
+            // 2. JAZA JEDWALI (Detailed Table)
+            const tableBody = document.getElementById('attendanceTableBody');
+            if (myData.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:10px;">Huna rekodi yoyote.</td></tr>';
+            } else {
+                // Panga mahudhurio kuanzia mapya (Reverse)
+                tableBody.innerHTML = myData.reverse().map(row => `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding: 8px;">${row[3]}</td>
+                    <td style="padding: 8px; color: var(--primary-blue);">${row[1]}</td>
+                    <td style="padding: 8px; font-style: italic; opacity: 0.8;">${row[5] || 'N/A'}</td>
+                </tr>
+            `).join('');
+            }
+
+        } catch (e) {
+            console.error("Analytics Error:", e);
+            document.getElementById('attendanceTableBody').innerHTML = '<tr><td colspan="3" style="color:red;">Error loading data.</td></tr>';
+        }
+    }
+
+    // Usisahau function ya toggle
+    async function toggleStudentStats() {
+        const statsDiv = document.getElementById('studentStats');
+        const btn = document.getElementById('toggleStatsBtn');
+
+        if (statsDiv.classList.contains('hidden')) {
+            btn.innerText = "Inapakia...";
+            await loadStudentAnalytics();
+            statsDiv.classList.remove('hidden');
+            btn.innerText = "Ficha Mahudhurio";
+        } else {
+            statsDiv.classList.add('hidden');
+            btn.innerText = "Tazama Mahudhurio Yangu";
+        }
+    }
     // Hakikisha showView inaita updateUI kila inapobadilisha ukurasa
     function showView(id) {
         document.querySelectorAll('.container > div').forEach(v => {

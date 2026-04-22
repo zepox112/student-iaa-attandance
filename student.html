@@ -479,32 +479,54 @@
             maximumAge: 0             // Inachukua eneo jipya, sio la zamani lililohifadhiwa
         });
     }
-    // 5. BADILISHA PASSWORD
+    // 5. BADILISHA PASSWORD (REVISED)
     async function handleChangePass() {
-        const newPass = document.getElementById('newPass').value;
-        if (!newPass) return alert("Weka password mpya!");
+        const newPassInput = document.getElementById('newPass');
+        const newPass = newPassInput.value.trim();
+
+        if (!newPass) return alert("Tafadhali weka password mpya!");
+        if (newPass.length < 4) return alert("Password lazima iwe na angalau herufi au namba 4!");
+
+        const btn = document.querySelector("#changePassView .btn");
+        const originalText = btn.innerText;
+        btn.innerText = "Inahifadhi...";
+        btn.disabled = true;
+
+        // Tunatengeneza Object ya userData ili kuzuia N/A kwenye Sheets
+        // Tunatumia studentData ambayo tayari ipo kwenye memory ya simu
+        const userData = {
+            name: studentData[0],       // Jina lake la sasa
+            phone: newPass,             // Password mpya
+            role: "Student",
+            course: studentData[3],     // Kozi yake ya sasa
+            level: studentData[4] || "N/A",
+            year: studentData[6] || "N/A",
+            intake: studentData[7] || "N/A",
+            deviceId: localStorage.getItem('iaa_device_id') // Hakikisha kifaa kinabaki kile kile
+        };
 
         try {
-            const params = new URLSearchParams({
-                action: 'registerUser',
-                name: studentData[0],
-                phone: newPass,
-                role: "Student",
-                course: studentData[3],
-                level: "N/A",
-                subject: "N/A",
-                year: "N/A"
-            });
-
-            await fetch(`${SCRIPT_URL}?${params.toString()}`, {
+            // Tuma data kwa njia ya POST JSON (Hii itaenda kwenye 'registerUser' upande wa Apps Script)
+            const response = await fetch(`${SCRIPT_URL}?action=registerUser`, {
                 method: "POST",
-                mode: 'no-cors'
+                body: JSON.stringify(userData)
             });
 
-            alert("Password imebadilishwa kikamilifu!");
+            // Update studentData kwenye simu ili iwe na password mpya
+            studentData[1] = newPass;
+
+            alert("Password yako imebadilishwa kikamilifu na kuhifadhiwa kwenye mfumo!");
+
+            // Safisha fomu na rudi Dashboard
+            newPassInput.value = "";
             showView('dashboardView');
+
         } catch (e) {
-            alert("Imeshindwa kubadili password.");
+            console.error("Change Pass Error:", e);
+            alert("Hitilafu imetokea! Password haijabadilika. Angalia internet.");
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
         }
     }
     let currentLang = localStorage.getItem('appLang') || 'sw';
